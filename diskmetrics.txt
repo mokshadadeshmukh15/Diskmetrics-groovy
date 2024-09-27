@@ -1,0 +1,52 @@
+import groovy.json.JsonSlurper
+import java.math.RoundingMode
+import java.math.MathContext
+
+// Sample data from the provided link
+def jsonData = '''
+[
+    {"diskId":7,"status":"online","totalBytes":3298534883328,"freeBytes":295477986314},
+    {"diskId":3,"status":"online","totalBytes":4398046511104,"freeBytes":2214160772977},
+    {"diskId":9,"status":"online","totalBytes":6597069766656,"freeBytes":2651296869231},
+    {"diskId":10,"status":"online","totalBytes":6597069766656,"freeBytes":549757888402},
+    {"diskId":4,"status":"online","totalBytes":4398046511104,"freeBytes":3079175502226},
+    {"diskId":1,"status":"online","totalBytes":4398046511104,"freeBytes":2187121636186},
+    {"diskId":5,"status":"degraded","totalBytes":4398046511104,"freeBytes":485554222932},
+    {"diskId":6,"status":"online","totalBytes":4398046511104,"freeBytes":3162818023137},
+    {"diskId":2,"status":"degraded","totalBytes":4398046511104,"freeBytes":2191631669999},
+    {"diskId":8,"status":"online","totalBytes":3298534883328,"freeBytes":945771146376}
+]
+'''
+
+// Parsing the JSON data
+def slurper = new JsonSlurper()
+def disks = slurper.parseText(jsonData)
+
+// Variable to hold total values
+def totalUsedBytes = 0
+def totalAvailableBytes = 0
+
+// Define the MathContext for rounding to 2 decimal places
+def mc = new MathContext(4, RoundingMode.HALF_UP)
+
+// Printing the report for each disk
+disks.each { disk ->
+    def model = "DiskModel-${disk.diskId}" // Using a placeholder model name
+    def serialNumber = UUID.randomUUID().toString() // Generating a placeholder serial number
+    def usedBytes = disk.totalBytes - disk.freeBytes
+    def usagePercentage = (usedBytes / disk.totalBytes) * 100
+
+    // Print the individual disk report
+    println "[${model} - ${serialNumber}] is using ${usedBytes} byte(s) out of a total of ${disk.totalBytes} byte(s), giving it a current usage of ${usagePercentage.round(mc)}%."
+
+    // Accumulate total used and available bytes
+    totalUsedBytes += usedBytes
+    totalAvailableBytes += disk.totalBytes
+}
+
+// Convert bytes to TB for the final summary
+def totalUsedTB = totalUsedBytes / (1024 ** 4)
+def totalAvailableTB = totalAvailableBytes / (1024 ** 4)
+
+// Print the final line, rounding to 2 decimal places
+println "\nThe machine has ${totalUsedTB.round(mc)}/${totalAvailableTB.round(mc)} TB available."
